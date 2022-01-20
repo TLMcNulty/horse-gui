@@ -22,6 +22,46 @@ api = SixfabPower()
 # Assume all pins are set low //might be a problem later?
 pinState = [0] * 32
 
+# Class of MappedPin for looking up which button is mapped to a pin
+#   for lookups and callbacks
+#   This is for altering the button background in handleButton()
+class MappedPin:
+    def __init__(self, button_name, id):
+        self.button_name = button_name
+        self.id = id
+ 
+    def __eq__(self, other):
+       
+        # Equality Comparison between two objects
+        return self.button_name == other.button_name and self.id == other.id
+ 
+    def __hash__(self):
+       
+        # hash(custom_object)
+        return hash((self.button_name, self.id))
+ 
+
+# Map our buttons using the MappedPin class
+leftFlood = MappedPin('leftFloodButton', 23)
+rightSpot = MappedPin('rightFloodButton', 24)
+toggleBoth = ['leftF
+
+print("The hash is: %d" % hash(emp))
+ 
+# We'll check if two objects with the same
+# attribute values have the same hash
+emp_copy = Emp('Ragav', 12)
+print("The hash is: %d" % hash(emp_copy))
+
+configuredPins = {
+
+pinState[23] = "leftFloodButton"
+pinState[24] = "leftFloodButton"
+pinState[0] = "toggleBothButton"
+leftFlood = 23
+rightSpot = 24
+toggleBoth = [23, 24]
+
 # Count with board before we do pins
 try: 
     GPIO.setmode(GPIO.BOARD)
@@ -32,29 +72,38 @@ def updateUserConsole(message):
     userConsole.append("[" + str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')) + "] - " + message)
     userConsole.tk.see("end")
 
-def togglePin(pinId, *args):
-    if args:
-        updateUserConsole("Would try to put " + str(args))
-    else:
-        updateUserConsole("Pin on" + str(pinId))
-        """
-        if pinState[pinId]:
-            try:
-                GPIO.output(pinId, GPIO.LOW)
-                pinState[pinId] = 0
-                pinSetMsg = pinId + "set low"
-                updateUserConsole(pinSetMsg)
-            except:
-                app.error("during togglePin:", "")
+def handleButton(pushList):
+    for push in pushList: # Run for every item passed
+        if type(push) == int:
+            togglePin(action)
+            # Construct buttonName from pinId
+
+
         else:
-            GPIO.output(pinId, GPIO.HIGH)
-            pinState[pinId] = 1
-            pinSetMsg = pinId + "set high"
+            if action.bg == "yellow":
+                action.bg = None
+            elif action.bg == None:
+                action.bg = "yellow"
+
+def togglePin(pinId):
+    updateUserConsole("Toggle " + str(pinId))
+    if pinState[pinId]:
+        try:
+            #GPIO.output(pinId, GPIO.LOW)
+            pinState[pinId] = 0
+            pinSetMsg = str(pinId) + " set low"
             updateUserConsole(pinSetMsg)
-        """
+        except:
+            app.error("during togglePin:", "")
+    else:
+        #GPIO.output(pinId, GPIO.HIGH)
+        pinState[pinId] = 1
+        pinSetMsg = str(pinId) + " set high"
+        updateUserConsole(pinSetMsg)
 
 def refreshPowerStats():
     battLvl = Text(glance, text="Battery Level: " + str(api.get_battery_level()), align="left")
+    '''
     sysTemp = Text(temps, text="System Temp: " + str(api.get_system_temp()), align="left")
     battTemp = Text(temps, text="Battery Temp: " + str(api.get_battery_temp()))
     inputTemp = Text(temps, text="Input Temp: " + str(api.get_input_temp()))
@@ -67,6 +116,10 @@ def refreshPowerStats():
     battCurr = Text(power, text="Battery Current: " + str(api.get_battery_current()))
     fanHealth = Text(fans, text="Fan Health: " + str(api.get_fan_health()))
     fanSpeed = Text(fans, text="Fan Speed: " + str(api.get_fan_speed()))
+    '''
+
+def displayBattLvl():
+    battLvlBlock = Box(glance, text=battLvl)
 
 def exitApp():
     app.destroy()
@@ -80,7 +133,7 @@ bottomMargin = Box(app, height=15, width=1000, align="bottom")
 # Create a box to contain the controls and lights
 topThird = Box(app, width="fill", height="200")
 
-# Status widgets
+# Control widget
 controls = TitleBox(topThird, text="horseGUI", align="left", height="fill", width="fill")
 #controlsTopPadding = Box(controls, height="15", width="fill")
 controlsLeftPadding = Box(controls, height="fill", width="15", align="left")
@@ -96,24 +149,24 @@ exit.text_size = "18"
 lights = TitleBox(topThird, text="Lights", layout="grid", height="fill", width="fill")
 lightsPaddingTop = Box(lights, height=15, width="fill", grid=[0,0])
 lightsLeftPadding = Box(lights, height="fill", width="15", align="left", grid=[0,1])
-button1 = PushButton(lights, text="LEFT - Flood", command=togglePin, args=[23], grid=[1,1])
-button2 = PushButton(lights, text="TOGGLE\nALL", command=togglePin, args=["Both"], grid=[2,1])
-button3 = PushButton(lights, text="RIGHT - Spot", command=togglePin, args=[24], grid=[3,1])
+leftFloodButton = PushButton(lights, text="LEFT - Flood", command=handleButton, args=[[23]], grid=[1,1])
+toggleBothButton = PushButton(lights, text="TOGGLE\nALL", command=handleButton, args=[[23, 24]], grid=[2,1])
+rightSpotButton = PushButton(lights, text="RIGHT - Spot", command=handleButton, args=[[24]], grid=[3,1])
 lightsRightPadding = Box(lights, height="fill", width="15", align="right", grid=[4,1])
 lightsPaddingBot = Box(lights, height=15, width=15, grid=[0,2])
 
 # Create a box to contain status and messages
 botThird = Box(app, width="fill", height="fill")
 
-status = TitleBox(botThird, text="Status", align="left", width="fill", height="fill")
+status = TitleBox(botThird, text="Status", align="left", width="500", height="fill")
+glance = Box(status)
+refreshPowerStats()
+
 statusPageButtons=Box(status, height="50", width="500")
-statusPrev = PushButton(statusPageButtons, text="<", width="fill")
-statusNext = PushButton(statusPageButtons, text=">", width="fill")
+statusPrev = PushButton(statusPageButtons, text="<", width="fill", align="left")
+#statusPageSpace = Box(statusPageButtons, width="5", height="fill")
+statusNext = PushButton(statusPageButtons, text=">", width="fill", align="right")
 #statusPaddingTop = Box(status, height=15, width=15)
-glance = TitleBox(status, text="At-A-Glance")
-temps = TitleBox(status, text="Temperatures")
-power = TitleBox(status, text="Power")
-fans = TitleBox(status, text="Fans")
 #status.repeat(1000, refreshPowerStats)
 
 # Messages
