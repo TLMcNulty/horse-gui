@@ -22,45 +22,37 @@ api = SixfabPower()
 # Assume all pins are set low //might be a problem later?
 pinState = [0] * 32
 
+"""
 # Class of MappedPin for looking up which button is mapped to a pin
 #   for lookups and callbacks
 #   This is for altering the button background in handleButton()
 class MappedPin:
-    def __init__(self, button_name, id):
-        self.button_name = button_name
-        self.id = id
+    def __init__(self, pin_no, button_name):
+        self.name = button_name
+        self.pin = pin_no
  
     def __eq__(self, other):
        
         # Equality Comparison between two objects
-        return self.button_name == other.button_name and self.id == other.id
+        return self.name == other.name and self.pin == other.pin
  
-    def __hash__(self):
-       
-        # hash(custom_object)
-        return hash((self.button_name, self.id))
- 
-
 # Map our buttons using the MappedPin class
-leftFlood = MappedPin('leftFloodButton', 23)
-rightSpot = MappedPin('rightFloodButton', 24)
-toggleBoth = ['leftF
+leftFlood = MappedPin(23, 'leftFloodButton')
+rightSpot = MappedPin(24, 'rightFloodButton')
+toggleBoth = [leftFlood, rightSpot]
 
-print("The hash is: %d" % hash(emp))
- 
+mappedButtons = [leftFlood, rightSpot, toggleBoth]
+
+updateUserConsole("Mapped pins: ")
+for button in mappedButtons:
+    updateUserConsole(button.pin + " - " + button.name)
+'''
 # We'll check if two objects with the same
 # attribute values have the same hash
 emp_copy = Emp('Ragav', 12)
 print("The hash is: %d" % hash(emp_copy))
-
-configuredPins = {
-
-pinState[23] = "leftFloodButton"
-pinState[24] = "leftFloodButton"
-pinState[0] = "toggleBothButton"
-leftFlood = 23
-rightSpot = 24
-toggleBoth = [23, 24]
+'''
+"""
 
 # Count with board before we do pins
 try: 
@@ -75,9 +67,9 @@ def updateUserConsole(message):
 def handleButton(pushList):
     for push in pushList: # Run for every item passed
         if type(push) == int:
-            togglePin(action)
+            togglePin(push)
             # Construct buttonName from pinId
-
+            
 
         else:
             if action.bg == "yellow":
@@ -123,6 +115,31 @@ def displayBattLvl():
 
 def exitApp():
     app.destroy()
+
+# Our functions are now defined, let's map pins
+
+# Class of MappedPin for looking up which button is mapped to a pin
+#   for lookups and callbacks
+#   This is for altering the button background in handleButton()
+class MappedPin:
+    def __init__(self, pin_no, button_name):
+        self.name = button_name
+        self.pin = pin_no
+ 
+    def __eq__(self, other):
+       
+        # Equality Comparison between two objects
+        return self.name == other.name and self.pin == other.pin
+ 
+# Map our buttons using the MappedPin class
+leftFlood = MappedPin(23, 'leftFloodButton')
+rightSpot = MappedPin(24, 'rightFloodButton')
+
+mappedButtons = [leftFlood, rightSpot]
+
+print("Mapped pins: ")
+for button in mappedButtons:
+    print("  {} - {}".format(button.pin, button.name))
 
 # Pad the left, right, top and bottom edges with 15px
 topMargin = Box(app, height=15, width=1000)
