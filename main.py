@@ -1,18 +1,12 @@
 #!/bin/bash/python3 
 
-# Pin mappings:
-# 
-# leftFlood = 23
-# rightSpot = 24
-
 from guizero import *
 from power_api import SixfabPower, Definition, Event
 from datetime import datetime
 import RPi.GPIO as GPIO
 import tk
 
-# Define app first thing so we can start printing messages
-#   and set fullscreen to true
+# Define app first thing and set fullscreen to true
 app = App(title="horse_GUI")
 app.tk.attributes("-fullscreen",True)
 
@@ -22,43 +16,15 @@ api = SixfabPower()
 # Assume all pins are set low //might be a problem later?
 pinState = [0] * 32
 
-"""
-# Class of MappedPin for looking up which button is mapped to a pin
-#   for lookups and callbacks
-#   This is for altering the button background in handleButton()
-class MappedPin:
-    def __init__(self, pin_no, button_name):
-        self.name = button_name
-        self.pin = pin_no
- 
-    def __eq__(self, other):
-       
-        # Equality Comparison between two objects
-        return self.name == other.name and self.pin == other.pin
- 
-# Map our buttons using the MappedPin class
-leftFlood = MappedPin(23, 'leftFloodButton')
-rightSpot = MappedPin(24, 'rightFloodButton')
-toggleBoth = [leftFlood, rightSpot]
-
-mappedButtons = [leftFlood, rightSpot, toggleBoth]
-
-updateUserConsole("Mapped pins: ")
-for button in mappedButtons:
-    updateUserConsole(button.pin + " - " + button.name)
-'''
-# We'll check if two objects with the same
-# attribute values have the same hash
-emp_copy = Emp('Ragav', 12)
-print("The hash is: %d" % hash(emp_copy))
-'''
-"""
-
 # Count with board before we do pins
 try: 
     GPIO.setmode(GPIO.BOARD)
 except:
     app.error("during GPIO.setmodexception:", "")
+
+##########
+# Function definitions
+##########
 
 def updateUserConsole(message):
     userConsole.append("[" + str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')) + "] - " + message)
@@ -68,17 +34,13 @@ def handleButton(pushList):
     for push in pushList: # Run for every item passed
         if type(push) == int:
             togglePin(push)
-            # Construct buttonName from pinId
-            
-
-        else:
-            if action.bg == "yellow":
-                action.bg = None
-            elif action.bg == None:
-                action.bg = "yellow"
 
 def togglePin(pinId):
-    updateUserConsole("Toggle " + str(pinId))
+    #updateUserConsole("Toggle " + str(pinId))
+    pins[pinId].toggle()
+    '''
+    print("{} {} {}".format(pinId, pins[pinId].button, pins[pinId].state))
+    print("{} {} {}".format(pinId, pins[pinId].button, pins[pinId].state))
     if pinState[pinId]:
         try:
             #GPIO.output(pinId, GPIO.LOW)
@@ -92,6 +54,7 @@ def togglePin(pinId):
         pinState[pinId] = 1
         pinSetMsg = str(pinId) + " set high"
         updateUserConsole(pinSetMsg)
+    '''
 
 def refreshPowerStats():
     battLvl = Text(glance, text="Battery Level: " + str(api.get_battery_level()), align="left")
@@ -118,28 +81,35 @@ def exitApp():
 
 # Our functions are now defined, let's map pins
 
+pins = dict()
+
 # Class of MappedPin for looking up which button is mapped to a pin
 #   for lookups and callbacks
 #   This is for altering the button background in handleButton()
-class MappedPin:
-    def __init__(self, pin_no, button_name):
-        self.name = button_name
+class MapPin:
+    def __init__(self, pin_no, button, deviceName):
+        self.button = button
         self.pin = pin_no
+        self.state = "low"
+        self.deviceName = deviceName
  
     def __eq__(self, other):
        
         # Equality Comparison between two objects
         return self.name == other.name and self.pin == other.pin
- 
-# Map our buttons using the MappedPin class
-leftFlood = MappedPin(23, 'leftFloodButton')
-rightSpot = MappedPin(24, 'rightFloodButton')
 
-mappedButtons = [leftFlood, rightSpot]
-
-print("Mapped pins: ")
-for button in mappedButtons:
-    print("  {} - {}".format(button.pin, button.name))
+    def toggle(self):
+        if self.state == "low":
+            self.button.bg = "yellow"
+            self.state = "high"
+            updateUserConsole("Turned " + self.deviceName + " on.")
+        else:
+            self.state = "low"
+            self.button.bg = None
+            updateUserConsole("Turned " + self.deviceName + " off.")
+#######
+# Begin to build the document
+#######
 
 # Pad the left, right, top and bottom edges with 15px
 topMargin = Box(app, height=15, width=1000)
@@ -193,5 +163,11 @@ userConsole.bg = "black"
 userConsole.text_color = "white"
 userConsole.text_size = "18"
 messagePaddingBot = Box(messages, height=15, width=15)
+
+# Map our buttons using the MappedPin class
+#   MUST be done after buttons are defined
+#   MapPin(pinId, buttonName, deviceName
+pins[23] = MapPin(23, leftFloodButton, "flood light")
+pins[24] = MapPin(24, rightSpotButton, "spot light")
 
 app.display()
