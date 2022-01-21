@@ -2,6 +2,7 @@
 
 from guizero import *
 from power_api import SixfabPower, Definition, Event
+from rpi_backlight import Backlight
 from datetime import datetime
 import RPi.GPIO as GPIO
 import tk
@@ -10,8 +11,9 @@ import tk
 app = App(title="horse_GUI")
 app.tk.attributes("-fullscreen",True)
 
-# Connect to the power hat
+# Do library setups
 api = SixfabPower()
+bl = Backlight()
 
 # Assume all pins are set low //might be a problem later?
 pinState = [0] * 32
@@ -59,10 +61,16 @@ def setEmission(emissionLevel):
 def toggleBacklight(escape):
     if escape:
         updateUserConsole("Turning backlight on.")
+        bl.brightness = 25
+        bl.power = True
         backlightWindow.hide()
         return
+    elif bl.brightness != 100:
+        updateUserConsole("Turning backlight up.")
+        bl.brightness = 100
     else:
         updateUserConsole("Turning backlight off.")
+        bl.power = False
         backlightWindow.show()
 
 def updateGlance():
