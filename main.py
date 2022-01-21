@@ -5,6 +5,8 @@ from power_api import SixfabPower, Definition, Event
 from rpi_backlight import Backlight
 from datetime import datetime
 import RPi.GPIO as GPIO
+import psutil
+import os
 import tk
 
 # Define app first thing and set fullscreen to true
@@ -76,6 +78,11 @@ def toggleBacklight(escape):
 def updateGlance():
     localInputVolt = api.get_input_voltage()
     localBattLvl = api.get_battery_level()
+    localSysTempC = round(api.get_system_temp(), 1)
+    localSysTempF = round((localSysTempC * 1.8 + 32), 1)
+
+    tempIndicatorText.value = str(localSysTempC) + "C\n" + str(localSysTempF) + "F"
+    #updateUserConsole(str(localSysTempC) + "C" + str(localSysTempF) + "F")
     #updateUserConsole("A/C: "+ str(round(localInputVolt, 2)))
     #updateUserConsole("Battery: " + localBattLvl)
     try:
@@ -106,6 +113,9 @@ def updateGlance():
         battLvl.bg = "orange"
     elif localInputVolt == 0.0 and localBattLvl < 40:
         battLvl.bg = "red"
+   
+    cpuIndicatorText.value = "CPU:\n" + str(psutil.cpu_percent(interval=None)) + "%"
+    ramIndicatorText.value = "RAM:\n" + str(psutil.virtual_memory()[2]) + "%" 
 
     '''
     inputVolt = Text(power, text="Input Voltage: " + str(api.get_input_voltage()))
@@ -254,8 +264,26 @@ inputLvl.text_size = 14
 emissionIndicator = Box(glance, height="70", width="70", grid=[0,1], border=True, align="left")
 emissionIndicator.bg = "white"
 emissionIndicatorText = Text(emissionIndicator, text="E/C:\nN/A", height="fill", width="fill")
+emissionIndicatorText.text_size = 16
 emissionIndicatorText.text_color = "black"
-# Restrict emissions at startup
+
+# System temperature indicator
+tempIndicator = Box(glance, height="70", width="70", grid=[1,1], border=True, align="left")
+tempIndicator.bg = "white"
+tempIndicatorText = Text(tempIndicator, text="Sys Temp", height="fill", width="fill")
+tempIndicatorText.text_color = "black"
+
+# System performance stats
+# CPU
+cpuIndicator = Box(glance, height="70", width="70", grid=[3,0], border=True, align="left")
+cpuIndicator.bg = "white"
+cpuIndicatorText = Text(cpuIndicator, text="OS/\nCPU", height="fill", width="fill")
+cpuIndicatorText.text_color = "black"
+# RAM
+ramIndicator = Box(glance, height="70", width="70", grid=[3,1], border=True, align="left")
+ramIndicator.bg = "white"
+ramIndicatorText = Text(ramIndicator, text="OS/\nRAM", height="fill", width="fill")
+ramIndicatorText.text_color = "black"
 
 # Status page navigation controls
 statusPageButtons=Box(status, height="200", width="fill")
@@ -281,6 +309,6 @@ messagePaddingBot = Box(messages, height=15, width=15)
 pins[23] = MapPin(23, leftFloodButton, "flood light")
 pins[24] = MapPin(24, rightSpotButton, "spot light")
 
-status.repeat(2000, updateGlance)
+status.repeat(1000, updateGlance)
 
 app.display()
