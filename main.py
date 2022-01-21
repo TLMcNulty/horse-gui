@@ -56,9 +56,17 @@ def togglePin(pinId):
         updateUserConsole(pinSetMsg)
     '''
 
-def refreshPowerStats():
-    battLvl = Text(glance, text="Battery Level: " + str(api.get_battery_level()), align="left")
+def updateGlance():
+    try:
+        inputLvl.value = "A/C:\n" + str(round(api.get_input_voltage(), 2)) + "v"
+    except:
+        inputLvl.value = "A/C:\nerr"
+    try:
+        battLvl.value = "Battery:\n" + str(api.get_battery_level()) + "%"
+    except:
+        battLvl.value = "Battery:\nerr"
     '''
+    inputVolt = Text(power, text="Input Voltage: " + str(api.get_input_voltage()))
     sysTemp = Text(temps, text="System Temp: " + str(api.get_system_temp()), align="left")
     battTemp = Text(temps, text="Battery Temp: " + str(api.get_battery_temp()))
     inputTemp = Text(temps, text="Input Temp: " + str(api.get_input_temp()))
@@ -122,18 +130,24 @@ topThird = Box(app, width="fill", height="200")
 
 # Control widget
 controls = TitleBox(topThird, text="horseGUI", align="left", height="fill", width="fill")
+controls.text_size = 14
 #controlsTopPadding = Box(controls, height="15", width="fill")
 controlsLeftPadding = Box(controls, height="fill", width="15", align="left")
 exit = PushButton(controls, text="EXIT", command=exitApp, align="left")
+radioCutoff = PushButton(controls, text="RADIO SILENT", align="left")
 controlsRightPadding = Box(controls, height="fill", width="15", align="right")
 controlsBottomPadding = Box(controls, height="15", width="fill")
 exit.bg = "red"
 exit.text_color = "white"
 exit.text_size = "18"
+radioCutoff.bg = "green"
+radioCutoff.text_color = "white"
+radioCutoff.text_size = "18"
 #status.repeat(1000, refreshPowerStats)
 
 # Lights/button widgets
 lights = TitleBox(topThird, text="Lights", layout="grid", height="fill", width="fill")
+lights.text_size = 14
 lightsPaddingTop = Box(lights, height=15, width="fill", grid=[0,0])
 lightsLeftPadding = Box(lights, height="fill", width="15", align="left", grid=[0,1])
 leftFloodButton = PushButton(lights, text="LEFT - Flood", command=handleButton, args=[[23]], grid=[1,1])
@@ -145,20 +159,45 @@ lightsPaddingBot = Box(lights, height=15, width=15, grid=[0,2])
 # Create a box to contain status and messages
 botThird = Box(app, width="fill", height="fill")
 
+# Status
 status = TitleBox(botThird, text="Status", align="left", width="500", height="fill")
-glance = Box(status)
-refreshPowerStats()
+status.text_size = 14
+#status.bg = "orange"
+glance = Box(status, height=100, width="200", layout="grid")
+#glance.bg = "blue"
 
-statusPageButtons=Box(status, height="50", width="500")
+# Battery charge level indicator
+battIndicator = Box(glance, height="70", width="70", grid=[0,0], border=True)
+battIndicator.bg = "white"
+battLvl = Text(battIndicator, text="Battery:\n" + str(api.get_battery_level()) + "%", height="fill", width="fill")
+battLvl.bg = "white"
+battLvl.text_color = "black"
+battLvl.text_size = 14
+
+# Power input indicator
+inputIndicator = Box(glance, height="70", width="70", grid=[1,0], border=True)
+inputIndicator.bg = "white"
+try:
+    inputLvl = Text(inputIndicator, text="A/C:\n" + str(round(api.get_input_voltage(),2)) + "v", height="fill", width="fill")
+except:
+    inputLvl = Text(inputIndicator, text="A/C:\nerr", height="fill", width="fill")
+inputLvl.bg = "white"
+inputLvl.text_color = "black"
+inputLvl.text_size = 14
+
+# Status page navigation controls
+statusPageButtons=Box(status, height="200", width="fill")
+#statusPageButtons.bg = "gray"
 statusPrev = PushButton(statusPageButtons, text="<", width="fill", align="left")
-#statusPageSpace = Box(statusPageButtons, width="5", height="fill")
-statusNext = PushButton(statusPageButtons, text=">", width="fill", align="right")
-#statusPaddingTop = Box(status, height=15, width=15)
-#status.repeat(1000, refreshPowerStats)
+statusRefresh = PushButton(statusPageButtons, image="./refresh.png", align="left")
+statusNext = PushButton(statusPageButtons, text=">", width="fill", align="left")
 
 # Messages
-messages = TitleBox(botThird, text="Messages", width="fill", height="fill")
-userConsole = TextBox(messages, text="Starting up...", align="left", multiline=True, height="fill", width="fill", scrollbar=True)
+messages = TitleBox(botThird, text="Messages", border=False, width="fill", height="fill")
+messages.text_size = 14
+messages.text_color = "white"
+messages.bg = "black"
+userConsole = TextBox(messages, text="System ready.", align="left", multiline=True, height="fill", width="fill", scrollbar=True)
 userConsole.bg = "black"
 userConsole.text_color = "white"
 userConsole.text_size = "18"
@@ -169,5 +208,7 @@ messagePaddingBot = Box(messages, height=15, width=15)
 #   MapPin(pinId, buttonName, deviceName
 pins[23] = MapPin(23, leftFloodButton, "flood light")
 pins[24] = MapPin(24, rightSpotButton, "spot light")
+
+status.repeat(2000, updateGlance)
 
 app.display()
