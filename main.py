@@ -38,23 +38,32 @@ def handleButton(pushList):
 def togglePin(pinId):
     #updateUserConsole("Toggle " + str(pinId))
     pins[pinId].toggle()
-    '''
-    print("{} {} {}".format(pinId, pins[pinId].button, pins[pinId].state))
-    print("{} {} {}".format(pinId, pins[pinId].button, pins[pinId].state))
-    if pinState[pinId]:
-        try:
-            #GPIO.output(pinId, GPIO.LOW)
-            pinState[pinId] = 0
-            pinSetMsg = str(pinId) + " set low"
-            updateUserConsole(pinSetMsg)
-        except:
-            app.error("during togglePin:", "")
+
+def setEmission(emissionLevel):
+    if emissionLevel == 0:
+        updateUserConsole("Set Condition 0: Emission Prohibited")
+        emissionIndicator.bg = "red"
+        emissionIndicatorText.text_color = "white"
+        emissionIndicatorText.value = "E/C:\n0"
+    if emissionLevel == 1:
+        updateUserConsole("Set Condition 1: Quiet listening")
+        emissionIndicator.bg = "green"
+        emissionIndicatorText.text_color = "white"
+        emissionIndicatorText.value = "E/C:\n1"
+    if emissionLevel == 2:
+        updateUserConsole("Set Condition 2: Unrestricted Emission")
+        emissionIndicator.bg = "blue"
+        emissionIndicatorText.text_color = "white"
+        emissionIndicatorText.value = "E/C:\n2"
+
+def toggleBacklight(escape):
+    if escape:
+        updateUserConsole("Turning backlight on.")
+        backlightWindow.hide()
+        return
     else:
-        #GPIO.output(pinId, GPIO.HIGH)
-        pinState[pinId] = 1
-        pinSetMsg = str(pinId) + " set high"
-        updateUserConsole(pinSetMsg)
-    '''
+        updateUserConsole("Turning backlight off.")
+        backlightWindow.show()
 
 def updateGlance():
     localInputVolt = api.get_input_voltage()
@@ -112,6 +121,12 @@ def displayBattLvl():
 def exitApp():
     app.destroy()
 
+# Set up for backlight control
+backlightWindow = Window(app, title="Tap to turn on backlight")
+closeBacklightWindow = PushButton(backlightWindow, height="fill", width="fill", text="Tap to turn on backlight", command=toggleBacklight, args=[True])
+backlightWindow.tk.attributes("-fullscreen",True)
+backlightWindow.hide()
+
 # Our functions are now defined, let's map pins
 
 pins = dict()
@@ -157,18 +172,18 @@ topThird = Box(app, width="fill", height="200")
 controls = TitleBox(topThird, text="horseGUI", align="left", height="fill", width="fill", layout="grid")
 controls.text_size = 14
 #controlsTopPadding = Box(controls, height="15", width="fill")
-controlsLeftPadding = Box(controls, height="fill", width="15", align="left", grid=[0,0])
+controlsLeftPadding = Box(controls, height="fill", width="15", grid=[0,0])
 
 # Device controls
-appControls = Box(controls, grid=[1,0])
-exit = PushButton(appControls, text="EXIT", command=exitApp, align="left")
-backlight = PushButton(appControls, text="BACKLIGHT", align="left")
+appControls = Box(controls, grid=[1,0], layout="grid")
+exit = PushButton(appControls, text="EXIT", command=exitApp, grid=[0,0])
+backlight = PushButton(appControls, text="BACKLIGHT", command=toggleBacklight, args=[False],grid=[1,0])
 
 # Emission controls
-emissionControl = TitleBox(controls, text="Emission", border=False, grid=[1,1], layout="grid")
-emission0 = PushButton(emissionControl, text="CONDITION 0", grid=[0,0])
-emission1 = PushButton(emissionControl, text="LISTEN", grid=[1,0])
-emission2 = PushButton(emissionControl, text="LOUD", grid=[2,0])
+emissionControl = TitleBox(controls, text="E/C - Emission Control", border=False, grid=[1,1], layout="grid")
+emission0 = PushButton(emissionControl, text="CONDITION 0", command=setEmission, args=[0], grid=[0,0])
+emission1 = PushButton(emissionControl, text="LISTEN", command=setEmission, args=[1], grid=[1,0])
+emission2 = PushButton(emissionControl, text="LOUD", command=setEmission, args=[2], grid=[2,0])
 
 # Controls padding
 controlsRightPadding = Box(controls, height="fill", width="15", grid=[3,1])
@@ -181,11 +196,11 @@ exit.text_size = "18"
 backlight.bg = "black"
 backlight.text_color = "white"
 backlight.text_size = "16"
-emission0.bg = "red"
+emission0.bg = "gray"
 emission0.text_color = "white"
-emission1.bg = "blue"
+emission1.bg = "green"
 emission1.text_color = "white"
-emission2.bg = "green"
+emission2.bg = "blue"
 emission2.text_color = "white"
 
 # Lights/button widgets
@@ -205,9 +220,9 @@ botThird = Box(app, width="fill", height="fill")
 # Status
 status = TitleBox(botThird, text="Status", align="left", width="500", height="fill")
 status.text_size = 14
-#status.bg = "orange"
+
+# Glance module
 glance = Box(status, height=100, width="200", layout="grid")
-#glance.bg = "blue"
 
 # Battery charge level indicator
 battIndicator = Box(glance, height="70", width="70", grid=[0,0], border=True)
@@ -226,6 +241,13 @@ except:
 #inputLvl.bg = "white"
 inputLvl.text_color = "white"
 inputLvl.text_size = 14
+
+# Emission control level indicator
+emissionIndicator = Box(glance, height="70", width="70", grid=[0,1], border=True, align="left")
+emissionIndicator.bg = "white"
+emissionIndicatorText = Text(emissionIndicator, text="E/C:\nN/A", height="fill", width="fill")
+emissionIndicatorText.text_color = "black"
+# Restrict emissions at startup
 
 # Status page navigation controls
 statusPageButtons=Box(status, height="200", width="fill")
