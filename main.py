@@ -57,14 +57,39 @@ def togglePin(pinId):
     '''
 
 def updateGlance():
+    localInputVolt = api.get_input_voltage()
+    localBattLvl = api.get_battery_level()
+    #updateUserConsole("A/C: "+ str(round(localInputVolt, 2)))
+    #updateUserConsole("Battery: " + localBattLvl)
     try:
-        inputLvl.value = "A/C:\n" + str(round(api.get_input_voltage(), 2)) + "v"
+        inputLvl.value = "Input:\n" + str(round(localInputVolt, 2)) + "v"
     except:
-        inputLvl.value = "A/C:\nerr"
+        inputLvl.value = "Input:\nerr"
     try:
-        battLvl.value = "Battery:\n" + str(api.get_battery_level()) + "%"
+        battLvl.value = "Battery:\n" + str(localBattLvl) + "%"
     except:
         battLvl.value = "Battery:\nerr"
+   
+    '''
+    if float(inputLvl.value) - localInputVolt == inputLvl.value:
+        updateUserConsole("A/C connection lost.")
+    if float(inputLvl.value) + localInputLvl != 0.0:
+        updateUserConsole("A/C connection gained.")
+    '''
+
+    if localInputVolt == 0.0:
+        inputLvl.bg = "red"
+    elif localInputVolt >= 4.0:
+        inputLvl.bg = "green"
+        battLvl.bg = "blue"
+
+    if localInputVolt == 0.0 and localBattLvl >= 80:
+        battLvl.bg = "green"
+    elif localInputVolt == 0.0 and localBattLvl >= 40 and localBattLvl < 80:
+        battLvl.bg = "orange"
+    elif localInputVolt == 0.0 and localBattLvl < 40:
+        battLvl.bg = "red"
+
     '''
     inputVolt = Text(power, text="Input Voltage: " + str(api.get_input_voltage()))
     sysTemp = Text(temps, text="System Temp: " + str(api.get_system_temp()), align="left")
@@ -129,21 +154,39 @@ bottomMargin = Box(app, height=15, width=1000, align="bottom")
 topThird = Box(app, width="fill", height="200")
 
 # Control widget
-controls = TitleBox(topThird, text="horseGUI", align="left", height="fill", width="fill")
+controls = TitleBox(topThird, text="horseGUI", align="left", height="fill", width="fill", layout="grid")
 controls.text_size = 14
 #controlsTopPadding = Box(controls, height="15", width="fill")
-controlsLeftPadding = Box(controls, height="fill", width="15", align="left")
-exit = PushButton(controls, text="EXIT", command=exitApp, align="left")
-radioCutoff = PushButton(controls, text="RADIO SILENT", align="left")
-controlsRightPadding = Box(controls, height="fill", width="15", align="right")
-controlsBottomPadding = Box(controls, height="15", width="fill")
+controlsLeftPadding = Box(controls, height="fill", width="15", align="left", grid=[0,0])
+
+# Device controls
+appControls = Box(controls, grid=[1,0])
+exit = PushButton(appControls, text="EXIT", command=exitApp, align="left")
+backlight = PushButton(appControls, text="BACKLIGHT", align="left")
+
+# Emission controls
+emissionControl = TitleBox(controls, text="Emission", border=False, grid=[1,1], layout="grid")
+emission0 = PushButton(emissionControl, text="CONDITION 0", grid=[0,0])
+emission1 = PushButton(emissionControl, text="LISTEN", grid=[1,0])
+emission2 = PushButton(emissionControl, text="LOUD", grid=[2,0])
+
+# Controls padding
+controlsRightPadding = Box(controls, height="fill", width="15", grid=[3,1])
+controlsBottomPadding = Box(controls, height="15", width="fill", grid=[0,4])
+
+# Controls color settings
 exit.bg = "red"
 exit.text_color = "white"
 exit.text_size = "18"
-radioCutoff.bg = "green"
-radioCutoff.text_color = "white"
-radioCutoff.text_size = "18"
-#status.repeat(1000, refreshPowerStats)
+backlight.bg = "black"
+backlight.text_color = "white"
+backlight.text_size = "16"
+emission0.bg = "red"
+emission0.text_color = "white"
+emission1.bg = "blue"
+emission1.text_color = "white"
+emission2.bg = "green"
+emission2.text_color = "white"
 
 # Lights/button widgets
 lights = TitleBox(topThird, text="Lights", layout="grid", height="fill", width="fill")
@@ -170,26 +213,25 @@ glance = Box(status, height=100, width="200", layout="grid")
 battIndicator = Box(glance, height="70", width="70", grid=[0,0], border=True)
 battIndicator.bg = "white"
 battLvl = Text(battIndicator, text="Battery:\n" + str(api.get_battery_level()) + "%", height="fill", width="fill")
-battLvl.bg = "white"
-battLvl.text_color = "black"
+battLvl.text_color = "white"
 battLvl.text_size = 14
 
 # Power input indicator
 inputIndicator = Box(glance, height="70", width="70", grid=[1,0], border=True)
 inputIndicator.bg = "white"
 try:
-    inputLvl = Text(inputIndicator, text="A/C:\n" + str(round(api.get_input_voltage(),2)) + "v", height="fill", width="fill")
+    inputLvl = Text(inputIndicator, text="Input:\n" + str(round(api.get_input_voltage(),2)) + "v", height="fill", width="fill")
 except:
-    inputLvl = Text(inputIndicator, text="A/C:\nerr", height="fill", width="fill")
-inputLvl.bg = "white"
-inputLvl.text_color = "black"
+    inputLvl = Text(inputIndicator, text="Input:\nerr", height="fill", width="fill")
+#inputLvl.bg = "white"
+inputLvl.text_color = "white"
 inputLvl.text_size = 14
 
 # Status page navigation controls
 statusPageButtons=Box(status, height="200", width="fill")
 #statusPageButtons.bg = "gray"
 statusPrev = PushButton(statusPageButtons, text="<", width="fill", align="left")
-statusRefresh = PushButton(statusPageButtons, image="./refresh.png", align="left")
+statusRefresh = PushButton(statusPageButtons, image="./refresh.png", command=updateGlance, align="left")
 statusNext = PushButton(statusPageButtons, text=">", width="fill", align="left")
 
 # Messages
